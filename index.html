@@ -1,0 +1,802 @@
+index.html<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Five Nights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            background: #000;
+            color: #fff;
+        }
+
+        #mainMenu {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a0a0a 0%, #0a0a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #mainMenu.hidden {
+            display: none;
+        }
+
+        #mainMenu h1 {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #f00;
+            text-shadow: 0 0 20px #f00, 0 0 40px #f00;
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px #f00, 0 0 40px #f00; }
+            50% { text-shadow: 0 0 30px #f00, 0 0 60px #f00, 0 0 80px #f00; }
+        }
+
+        #mainMenu p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            color: #aaa;
+        }
+
+        .menu-btn {
+            padding: 20px 50px;
+            margin: 10px;
+            font-size: 24px;
+            background: #333;
+            border: 3px solid #666;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .menu-btn:hover {
+            background: #600;
+            border-color: #f00;
+            transform: scale(1.05);
+        }
+
+        .night-select {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .night-select.active {
+            display: block;
+        }
+
+        .night-btn {
+            padding: 15px 30px;
+            margin: 5px;
+            font-size: 18px;
+            background: #222;
+            border: 2px solid #555;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .night-btn:hover {
+            background: #444;
+        }
+
+        #game {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #1a1a1a;
+            display: none;
+        }
+
+        #game.active {
+            display: block;
+        }
+
+        #office {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .door-btn {
+            position: absolute;
+            width: 80px;
+            height: 120px;
+            background: #333;
+            border: 3px solid #666;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .door-btn:hover {
+            background: #444;
+        }
+
+        .door-btn.active {
+            background: #600;
+            border-color: #f00;
+        }
+
+        #leftDoor {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #rightDoor {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #leftLight, #rightLight {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: #333;
+            border: 3px solid #666;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #leftLight {
+            left: 20px;
+            top: calc(50% + 80px);
+        }
+
+        #rightLight {
+            right: 20px;
+            top: calc(50% + 80px);
+        }
+
+        .light-active {
+            background: #ff0 !important;
+            box-shadow: 0 0 30px #ff0;
+        }
+
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #666;
+            min-width: 200px;
+        }
+
+        #cameraModal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            max-width: 900px;
+            max-height: 700px;
+            background: #000;
+            border: 4px solid #0f0;
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.5);
+            display: none;
+            z-index: 100;
+        }
+
+        #cameraModal.active {
+            display: block;
+            animation: cameraOpen 0.3s ease-out;
+        }
+
+        @keyframes cameraOpen {
+            from {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        #mapContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #0a0a0a;
+            overflow: hidden;
+        }
+
+        #mapContainer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.05) 2px,
+                rgba(0, 255, 0, 0.05) 4px
+            );
+            pointer-events: none;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        #mapTitle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #0f0;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #0f0;
+            z-index: 10;
+        }
+
+        .map-room {
+            position: absolute;
+            border: 2px solid #0a0;
+            background: rgba(0, 50, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #0f0;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .room-label {
+            font-size: 11px;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .animatronic-marker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 15px currentColor;
+            animation: blink 1s infinite;
+            z-index: 5;
+            transition: all 0.5s ease;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .animatronic-marker.freddy {
+            background: #8B4513;
+            color: #fff;
+            border: 2px solid #654321;
+        }
+
+        .animatronic-marker.bonnie {
+            background: #9370DB;
+            color: #fff;
+            border: 2px solid #6A5ACD;
+        }
+
+        .animatronic-marker.chica {
+            background: #FFD700;
+            color: #000;
+            border: 2px solid #FFA500;
+        }
+
+        #cameraToggle {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: #333;
+            border: 3px solid #666;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        #cameraToggle:hover {
+            background: #444;
+        }
+
+        #jumpscare {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            z-index: 1000;
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-10px, 10px) rotate(-5deg); }
+            75% { transform: translate(10px, -10px) rotate(5deg); }
+        }
+
+        #gameOver, #victory {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        #gameOver h1, #victory h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #f00;
+        }
+
+        #victory h1 {
+            color: #0f0;
+        }
+
+        #gameOver button, #victory button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #333;
+            border: 3px solid #666;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            margin-top: 20px;
+        }
+
+        .warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.3);
+            padding: 20px;
+            border: 3px solid #f00;
+            font-size: 24px;
+            display: none;
+        }
+
+        .warning.active {
+            display: block;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="mainMenu">
+        <h1>FIVE NIGHTS</h1>
+        <p>Can you survive until 6 AM?</p>
+        <button class="menu-btn" onclick="showNightSelect()">NEW GAME</button>
+        <button class="menu-btn" onclick="showInstructions()">HOW TO PLAY</button>
+        
+        <div id="nightSelect" class="night-select">
+            <p style="margin-bottom: 20px;">SELECT NIGHT</p>
+            <button class="night-btn" onclick="startGame(1)">NIGHT 1</button>
+            <button class="night-btn" onclick="startGame(2)">NIGHT 2</button>
+            <button class="night-btn" onclick="startGame(3)">NIGHT 3</button>
+            <button class="night-btn" onclick="startGame(4)">NIGHT 4</button>
+            <button class="night-btn" onclick="startGame(5)">NIGHT 5</button>
+        </div>
+    </div>
+
+    <div id="game">
+        <div id="office">
+            <div id="leftDoor" class="door-btn">
+                <div>LEFT</div>
+                <div>DOOR</div>
+            </div>
+            <div id="rightDoor" class="door-btn">
+                <div>RIGHT</div>
+                <div>DOOR</div>
+            </div>
+            <div id="leftLight">LIGHT</div>
+            <div id="rightLight">LIGHT</div>
+            
+            <div class="warning" id="leftWarning">⚠️ THREAT DETECTED ⚠️</div>
+            <div class="warning" id="rightWarning">⚠️ THREAT DETECTED ⚠️</div>
+        </div>
+
+        <div id="cameraModal">
+            <div id="mapContainer">
+                <div id="mapTitle">SECURITY CAMERA MAP</div>
+                <!-- Rooms will be added dynamically -->
+            </div>
+        </div>
+
+        <button id="cameraToggle">OPEN CAMERAS</button>
+
+        <div id="hud">
+            <div>NIGHT: <span id="night">1</span></div>
+            <div>TIME: <span id="time">12 AM</span></div>
+            <div>POWER: <span id="power">100</span>%</div>
+            <div style="margin-top: 10px; font-size: 11px;">Usage: <span id="usage">1</span> bar/s</div>
+        </div>
+
+        <div id="jumpscare">👹</div>
+
+        <div id="gameOver">
+            <h1>GAME OVER</h1>
+            <p>You didn't survive the night...</p>
+            <button onclick="returnToMenu()">MAIN MENU</button>
+        </div>
+
+        <div id="victory">
+            <h1>6 AM</h1>
+            <p>You survived the night!</p>
+            <button onclick="returnToMenu()">MAIN MENU</button>
+        </div>
+    </div>
+
+    <script>
+        const game = {
+            power: 100,
+            powerUsage: 1,
+            time: 0,
+            maxTime: 480,
+            leftDoorClosed: false,
+            rightDoorClosed: false,
+            leftLightOn: false,
+            rightLightOn: false,
+            camerasOpen: false,
+            gameActive: false,
+            currentNight: 1,
+            intervals: [],
+            roomLayout: [
+                { id: 0, name: 'SHOW STAGE', x: 40, y: 15, w: 20, h: 15 },
+                { id: 1, name: 'DINING', x: 40, y: 40, w: 20, h: 20 },
+                { id: 2, name: 'BACKSTAGE', x: 20, y: 15, w: 15, h: 15 },
+                { id: 3, name: 'LEFT HALL', x: 10, y: 45, w: 15, h: 30 },
+                { id: 4, name: 'RIGHT HALL', x: 75, y: 45, w: 15, h: 30 },
+                { id: 5, name: 'KITCHEN', x: 65, y: 15, w: 15, h: 15 }
+            ],
+            animatronics: [
+                { name: 'Freddy', pos: 0, path: [0, 1, 2, 4, 'right'], speed: 3, aiLevel: 0, class: 'freddy' },
+                { name: 'Bonnie', pos: 0, path: [0, 1, 3, 'left'], speed: 4, aiLevel: 0, class: 'bonnie' },
+                { name: 'Chica', pos: 0, path: [0, 2, 5, 4, 'right'], speed: 5, aiLevel: 0, class: 'chica' }
+            ]
+        };
+
+        const els = {
+            mainMenu: document.getElementById('mainMenu'),
+            nightSelect: document.getElementById('nightSelect'),
+            gameDiv: document.getElementById('game'),
+            leftDoor: document.getElementById('leftDoor'),
+            rightDoor: document.getElementById('rightDoor'),
+            leftLight: document.getElementById('leftLight'),
+            rightLight: document.getElementById('rightLight'),
+            cameraModal: document.getElementById('cameraModal'),
+            mapContainer: document.getElementById('mapContainer'),
+            cameraToggle: document.getElementById('cameraToggle'),
+            power: document.getElementById('power'),
+            usage: document.getElementById('usage'),
+            time: document.getElementById('time'),
+            night: document.getElementById('night'),
+            jumpscare: document.getElementById('jumpscare'),
+            gameOver: document.getElementById('gameOver'),
+            victory: document.getElementById('victory'),
+            leftWarning: document.getElementById('leftWarning'),
+            rightWarning: document.getElementById('rightWarning')
+        };
+
+        function showNightSelect() {
+            els.nightSelect.classList.add('active');
+        }
+
+        function showInstructions() {
+            alert('HOW TO PLAY:\n\n' +
+                  '- Click OPEN CAMERAS to monitor animatronics on the map\n' +
+                  '- Use LEFT/RIGHT DOOR buttons to close doors\n' +
+                  '- Use LIGHT buttons to check doorways\n' +
+                  '- Manage your power - it drains faster with usage\n' +
+                  '- Close doors when animatronics are nearby\n' +
+                  '- Survive from 12 AM to 6 AM\n\n' +
+                  'If power runs out or an animatronic gets in... GAME OVER!');
+        }
+
+        function startGame(night) {
+            game.currentNight = night;
+            game.gameActive = true;
+            game.power = 100;
+            game.time = 0;
+            game.leftDoorClosed = false;
+            game.rightDoorClosed = false;
+            game.camerasOpen = false;
+            
+            // Reset animatronics
+            game.animatronics.forEach(a => {
+                a.pos = 0;
+                a.aiLevel = Math.min(night * 2, 20);
+            });
+
+            els.mainMenu.classList.add('hidden');
+            els.gameDiv.classList.add('active');
+            els.night.textContent = night;
+            els.gameOver.style.display = 'none';
+            els.victory.style.display = 'none';
+            els.leftDoor.classList.remove('active');
+            els.rightDoor.classList.remove('active');
+
+            initializeMap();
+            startGameLoops();
+        }
+
+        function returnToMenu() {
+            game.gameActive = false;
+            game.intervals.forEach(interval => clearInterval(interval));
+            game.intervals = [];
+            els.gameDiv.classList.remove('active');
+            els.mainMenu.classList.remove('hidden');
+            els.nightSelect.classList.remove('active');
+            els.cameraModal.classList.remove('active');
+        }
+
+        function initializeMap() {
+            // Clear existing rooms
+            const existingRooms = els.mapContainer.querySelectorAll('.map-room, .animatronic-marker');
+            existingRooms.forEach(el => el.remove());
+
+            // Create room elements
+            game.roomLayout.forEach(room => {
+                const roomEl = document.createElement('div');
+                roomEl.className = 'map-room';
+                roomEl.style.left = room.x + '%';
+                roomEl.style.top = room.y + '%';
+                roomEl.style.width = room.w + '%';
+                roomEl.style.height = room.h + '%';
+                roomEl.innerHTML = `<div class="room-label">${room.name}</div>`;
+                roomEl.dataset.roomId = room.id;
+                els.mapContainer.appendChild(roomEl);
+            });
+
+            // Create animatronic markers
+            game.animatronics.forEach(a => {
+                const marker = document.createElement('div');
+                marker.className = `animatronic-marker ${a.class}`;
+                marker.textContent = a.name[0]; // First letter
+                marker.dataset.animatronic = a.name;
+                els.mapContainer.appendChild(marker);
+            });
+
+            updateAnimatronicPositions();
+        }
+
+        function updateAnimatronicPositions() {
+            game.animatronics.forEach(a => {
+                const marker = els.mapContainer.querySelector(`[data-animatronic="${a.name}"]`);
+                if (!marker) return;
+
+                const currentPos = a.path[a.pos];
+                
+                if (typeof currentPos === 'number') {
+                    // On a camera
+                    const room = game.roomLayout.find(r => r.id === currentPos);
+                    if (room) {
+                        marker.style.display = 'flex';
+                        // Position in center of room with slight offset for multiple animatronics
+                        const offset = game.animatronics.indexOf(a) * 35;
+                        marker.style.left = `calc(${room.x + room.w/2}% - 15px + ${offset}px)`;
+                        marker.style.top = `calc(${room.y + room.h/2}% - 15px)`;
+                    }
+                } else {
+                    // At a door (hide from map)
+                    marker.style.display = 'none';
+                }
+            });
+        }
+
+        // Door controls
+        els.leftDoor.onclick = () => toggleDoor('left');
+        els.rightDoor.onclick = () => toggleDoor('right');
+
+        // Light controls
+        els.leftLight.onclick = () => toggleLight('left');
+        els.rightLight.onclick = () => toggleLight('right');
+
+        // Camera toggle
+        els.cameraToggle.onclick = () => {
+            game.camerasOpen = !game.camerasOpen;
+            els.cameraModal.classList.toggle('active');
+            els.cameraToggle.textContent = game.camerasOpen ? 'CLOSE CAMERAS' : 'OPEN CAMERAS';
+            updatePowerUsage();
+        };
+
+        function toggleDoor(side) {
+            if (!game.gameActive) return;
+            
+            if (side === 'left') {
+                game.leftDoorClosed = !game.leftDoorClosed;
+                els.leftDoor.classList.toggle('active');
+            } else {
+                game.rightDoorClosed = !game.rightDoorClosed;
+                els.rightDoor.classList.toggle('active');
+            }
+            updatePowerUsage();
+        }
+
+        function toggleLight(side) {
+            if (!game.gameActive) return;
+            
+            const light = side === 'left' ? 'leftLightOn' : 'rightLightOn';
+            const lightEl = side === 'left' ? els.leftLight : els.rightLight;
+            const warningEl = side === 'left' ? els.leftWarning : els.rightWarning;
+            
+            if (!game[light]) {
+                game[light] = true;
+                lightEl.classList.add('light-active');
+                
+                // Check if animatronic is at door
+                const atDoor = game.animatronics.find(a => 
+                    a.path[a.pos] === side && a.pos === a.path.length - 1
+                );
+                warningEl.classList.toggle('active', !!atDoor);
+                
+                setTimeout(() => {
+                    game[light] = false;
+                    lightEl.classList.remove('light-active');
+                    warningEl.classList.remove('active');
+                }, 500);
+            }
+        }
+
+        function updatePowerUsage() {
+            game.powerUsage = 1;
+            if (game.leftDoorClosed) game.powerUsage += 1;
+            if (game.rightDoorClosed) game.powerUsage += 1;
+            if (game.camerasOpen) game.powerUsage += 1;
+            
+            els.usage.textContent = game.powerUsage;
+        }
+
+        function moveAnimatronics() {
+            game.animatronics.forEach(a => {
+                // AI level affects movement chance
+                const moveChance = (a.aiLevel + a.speed) / 2;
+                
+                if (Math.random() * 20 < moveChance) {
+                    if (a.pos < a.path.length - 1) {
+                        // Move to next position
+                        a.pos++;
+                        updateAnimatronicPositions();
+                    } else if (a.pos === a.path.length - 1) {
+                        // At door
+                        const side = a.path[a.pos];
+                        const doorClosed = side === 'left' ? game.leftDoorClosed : game.rightDoorClosed;
+                        
+                        if (!doorClosed) {
+                            triggerJumpscare(a.name);
+                        }
+                    }
+                }
+            });
+        }
+
+        function triggerJumpscare(name) {
+            if (!game.gameActive) return;
+            
+            game.gameActive = false;
+            const animatronic = game.animatronics.find(a => a.name === name);
+            els.jumpscare.textContent = animatronic ? `${name}!` : '👹';
+            els.jumpscare.style.display = 'flex';
+            
+            setTimeout(() => {
+                els.jumpscare.style.display = 'none';
+                els.gameOver.style.display = 'flex';
+            }, 2000);
+        }
+
+        function updateTime() {
+            game.time++;
+            const hour = Math.floor(game.time / 80);
+            const displayHour = hour === 0 ? 12 : hour;
+            els.time.textContent = `${displayHour} AM`;
+
+            if (game.time >= game.maxTime) {
+                victory();
+            }
+        }
+
+        function victory() {
+            game.gameActive = false;
+            els.victory.style.display = 'flex';
+        }
+
+        function updatePower() {
+            if (game.power > 0) {
+                game.power -= game.powerUsage * 0.05;
+                if (game.power < 0) game.power = 0;
+                els.power.textContent = Math.floor(game.power);
+
+                if (game.power === 0) {
+                    // Power out
+                    els.leftDoor.classList.remove('active');
+                    els.rightDoor.classList.remove('active');
+                    game.leftDoorClosed = false;
+                    game.rightDoorClosed = false;
+                    els.cameraModal.classList.remove('active');
+                    game.camerasOpen = false;
+                    
+                    setTimeout(() => {
+                        triggerJumpscare('Power Out');
+                    }, Math.random() * 10000 + 5000);
+                }
+            }
+        }
+
+        function startGameLoops() {
+            game.intervals = [];
+
+            game.intervals.push(setInterval(() => {
+                if (game.gameActive) {
+                    updatePower();
+                }
+            }, 100));
+
+            game.intervals.push(setInterval(() => {
+                if (game.gameActive) {
+                    updateTime();
+                }
+            }, 1000));
+
+            game.intervals.push(setInterval(() => {
+                if (game.gameActive) {
+                    moveAnimatronics();
+                }
+            }, 3000));
+        }
+    </script>
+</body>
+</html>
